@@ -1,0 +1,48 @@
+name: Check and deploy website
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check source files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get source code
+        uses: actions/checkout@v4
+      - name: Check required files and title
+        run: |
+          test -f index.html
+          test -f style.css
+          test -f script.js
+          grep -Eiq '<title[^>]*>[^<]+' index.html
+          echo "Required files and HTML title are present."
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Get source code
+        uses: actions/checkout@v4
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload website artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+      - name: Publish website
+        id: deployment
+        uses: actions/deploy-pages@v4
